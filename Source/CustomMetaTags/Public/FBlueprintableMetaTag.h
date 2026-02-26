@@ -6,10 +6,10 @@
 
 
 #define BP_METATAG(Name, Type) inline FBlueprintableMetaTag MetaTag##Name(#Name, Type);
-#define BP_METATAG_BOOL(Name) inline FBlueprintableMetaTag MetaTag##Name(#Name, EBPTagDataType::Type_Bool);
-#define BP_METATAG_STRING(Name) inline FBlueprintableMetaTag MetaTag##Name(#Name, EBPTagDataType::Type_String);
-#define BP_METATAG_INT(Name) inline FBlueprintableMetaTag MetaTag##Name(#Name, EBPTagDataType::Type_Int);
-#define BP_METATAG_FLOAT(Name) inline FBlueprintableMetaTag MetaTag##Name(#Name, EBPTagDataType::Type_Float);
+#define BP_METATAG_BOOL(Name) BP_METATAG(Name, EBPTagDataType::Type_Bool);
+#define BP_METATAG_STRING(Name) BP_METATAG(Name, EBPTagDataType::Type_String);
+#define BP_METATAG_INT(Name) BP_METATAG(Name, EBPTagDataType::Type_Int);
+#define BP_METATAG_FLOAT(Name) BP_METATAG(Name, EBPTagDataType::Type_Float);
 
 UENUM()
 enum class EBPTagDataType
@@ -30,6 +30,7 @@ public:
 	
 	
 	FName GetTagName() const;
+	EBPTagDataType GetTagDataType() const;
 
 	static TSet<const FBlueprintableMetaTag*>& GetRegisteredMetaTags();
 	

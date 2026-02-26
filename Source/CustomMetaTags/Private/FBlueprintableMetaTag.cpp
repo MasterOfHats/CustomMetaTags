@@ -15,6 +15,11 @@ FName FBlueprintableMetaTag::GetTagName() const
 	return TagName;
 }
 
+EBPTagDataType FBlueprintableMetaTag::GetTagDataType() const
+{
+	return TagDataType;
+}
+
 FBlueprintableMetaTag::~FBlueprintableMetaTag()
 {
 	GetRegisteredMetaTags().Remove(this);
