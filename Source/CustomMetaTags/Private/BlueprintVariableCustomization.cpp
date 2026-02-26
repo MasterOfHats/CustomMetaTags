@@ -8,10 +8,9 @@
 #include "Engine/Blueprint.h"
 #include "BlueprintEditorModule.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "FBlueprintableMetaTag.h"
 
 #define LOCTEXT_NAMESPACE "BlueprintVariableMetaTagCustomization"
-
-static const FName ContentFolderMeta(TEXT("BasicMetaTag"));
 
 TSharedPtr<IDetailCustomization> FBlueprintVariableMetaTagCustomization::MakeInstance(
 	TSharedPtr<IBlueprintEditor> InBlueprintEditor)
@@ -46,82 +45,81 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 
 		if(PropertyBeingCustomized.IsValid() && Found)
 		{
-			
-			//Metadata stuff
-			IDetailCategoryBuilder& MetadataCategory = DetailBuilder.EditCategory("Something");
-			
-			MetadataCategory.AddCustomRow(INVTEXT("ContentFilter"))
-				.NameContent()
-				[
-					SNew(STextBlock)
-					.Text(INVTEXT("Content Filter"))
-				]
-				.ValueContent()
-				[
-					SNew(SCheckBox)
-					.IsChecked_Lambda([PropertyBeingCustomized]() -> ECheckBoxState
-					{
-						if(!PropertyBeingCustomized.IsValid()) return ECheckBoxState::Unchecked;
-						
-						return PropertyBeingCustomized->HasMetaData(ContentFolderMeta) ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
-					})
-					.OnCheckStateChanged_Lambda([PropertyBeingCustomized, FindPropPred, this](ECheckBoxState State)
-					{
-						if(!PropertyBeingCustomized.IsValid()) return;
-						
-						if(BlueprintWeakPtr.IsValid())
-						{
-							FBPVariableDescription* FoundElement = BlueprintWeakPtr->NewVariables.FindByPredicate(FindPropPred);
+			IDetailCategoryBuilder& MetadataCategory = DetailBuilder.EditCategory("Meta Tags");
 
+			for (const FBlueprintableMetaTag* MetaTag : FBlueprintableMetaTag::GetRegisteredMetaTags())
+			{
+				FName TagName = MetaTag->GetTagName();
+				FText TagDisplayName = FText::FromName(TagName);
+
+				MetadataCategory.AddCustomRow(TagDisplayName)
+					.NameContent()
+					[
+						SNew(STextBlock)
+						.Text(TagDisplayName)
+					]
+					.ValueContent()
+					[
+						SNew(SCheckBox)
+						.IsChecked_Lambda([PropertyBeingCustomized, TagName]() -> ECheckBoxState
+						{
+							if(!PropertyBeingCustomized.IsValid()) return ECheckBoxState::Unchecked;
+							return PropertyBeingCustomized->HasMetaData(TagName) ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+						})
+						.OnCheckStateChanged_Lambda([PropertyBeingCustomized, FindPropPred, TagName, this](ECheckBoxState State)
+						{
+							if(!PropertyBeingCustomized.IsValid() || !BlueprintWeakPtr.IsValid()) return;
+
+							FBPVariableDescription* FoundElement = BlueprintWeakPtr->NewVariables.FindByPredicate(FindPropPred);
 							if(FoundElement)
 							{
-								if(FoundElement->HasMetaData(ContentFolderMeta))
+								if(FoundElement->HasMetaData(TagName))
 								{
-									FoundElement->RemoveMetaData(ContentFolderMeta);
-								} else
-								{
-									FoundElement->SetMetaData(ContentFolderMeta, "");
+									FoundElement->RemoveMetaData(TagName);
 								}
-								
+								else
+								{
+									FoundElement->SetMetaData(TagName, "");
+								}
 							}
 							BlueprintWeakPtr->Modify();
 							FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BlueprintWeakPtr.Get());
-						}
-					})
-				];
+						})
+					];
 
-			MetadataCategory.AddCustomRow(INVTEXT("Content Filter Area"))
-			.NameContent()
-				[
-					SNew(STextBlock)
-						.Text(INVTEXT("Content Filter Path"))
-				]
-			.ValueContent()
-			[
-				SNew(SEditableTextBox)
-				.Text_Lambda([PropertyBeingCustomized]() -> FText
-				{
-					return FText::FromString( PropertyBeingCustomized->HasMetaData(ContentFolderMeta) ? FName(PropertyBeingCustomized->GetMetaData(ContentFolderMeta)).ToString() : "");
-				})
-				.OnTextChanged_Lambda([FindPropPred, this](FText NewText)
-				{
-					FBPVariableDescription* FoundElement = BlueprintWeakPtr->NewVariables.FindByPredicate(FindPropPred);
-					if(FoundElement)
+				MetadataCategory.AddCustomRow(TagDisplayName)
+					.NameContent()
+					[
+						SNew(STextBlock)
+						.Text(FText::Format(INVTEXT("{0} Value"), TagDisplayName))
+					]
+					.ValueContent()
+					[
+						SNew(SEditableTextBox)
+						.Text_Lambda([PropertyBeingCustomized, TagName]() -> FText
+						{
+							if(!PropertyBeingCustomized.IsValid() || !PropertyBeingCustomized->HasMetaData(TagName))
+								return FText::GetEmpty();
+							return FText::FromString(PropertyBeingCustomized->GetMetaData(TagName));
+						})
+						.OnTextChanged_Lambda([FindPropPred, TagName, this](FText NewText)
+						{
+							if(!BlueprintWeakPtr.IsValid()) return;
+							FBPVariableDescription* FoundElement = BlueprintWeakPtr->NewVariables.FindByPredicate(FindPropPred);
+							if(FoundElement)
+							{
+								FoundElement->SetMetaData(TagName, NewText.ToString());
+							}
+							BlueprintWeakPtr->Modify();
+							FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BlueprintWeakPtr.Get());
+						})
+					]
+					.EditCondition(TAttribute<bool>::CreateLambda([PropertyBeingCustomized, TagName]() -> bool
 					{
-						FoundElement->SetMetaData(ContentFolderMeta, NewText.ToString());
-					}
-
-					BlueprintWeakPtr->Modify();
-					FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BlueprintWeakPtr.Get());
-				})
-			]
-			.EditCondition(TAttribute<bool>::CreateLambda([PropertyBeingCustomized]() -> bool
-			{
-				if(!PropertyBeingCustomized.IsValid()) return false;
-				return PropertyBeingCustomized->HasMetaData(ContentFolderMeta);
-			}), FOnBooleanValueChanged());
-
-
+						if(!PropertyBeingCustomized.IsValid()) return false;
+						return PropertyBeingCustomized->HasMetaData(TagName);
+					}), FOnBooleanValueChanged());
+			}
 		}
 	}
 }
