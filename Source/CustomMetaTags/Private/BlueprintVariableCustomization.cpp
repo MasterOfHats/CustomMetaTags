@@ -4,6 +4,7 @@
 #include "DetailWidgetRow.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Input/SNumericEntryBox.h"
+#include "Widgets/Input/SComboBox.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Engine/Blueprint.h"
@@ -187,6 +188,34 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 						{
 							CommitValue(FString::SanitizeFloat(NewValue));
 						});
+					break;
+
+				case EBPTagDataType::Type_List:
+					{
+						ValueWidget = SNew(SComboBox<TSharedPtr<FString>>)
+							.OptionsSource(&MetaTag->GetAllowedElements())
+							.OnGenerateWidget_Lambda([](TSharedPtr<FString> Item) -> TSharedRef<SWidget>
+							{
+								return SNew(STextBlock).Text(FText::FromString(*Item));
+							})
+							.OnSelectionChanged_Lambda([CommitValue](TSharedPtr<FString> Selected, ESelectInfo::Type)
+							{
+								if (Selected.IsValid())
+								{
+									CommitValue(*Selected);
+								}
+							})
+							.Content()
+							[
+								SNew(STextBlock)
+								.Text_Lambda([PropertyBeingCustomized, TagName]() -> FText
+								{
+									if (!PropertyBeingCustomized.IsValid() || !PropertyBeingCustomized->HasMetaData(TagName))
+										return INVTEXT("Select...");
+									return FText::FromString(PropertyBeingCustomized->GetMetaData(TagName));
+								})
+							];
+					}
 					break;
 
 				default:
