@@ -17,6 +17,8 @@ public:
 
 private:
 	UBlueprint* GetBlueprintFromEditor() const;
+	static bool MatchesFieldClass(const FProperty* Property, FFieldClass* FieldClass);
+	FBPVariableDescription* FindVariableDescription(FName VarName) const;
 	
 	
 	TWeakPtr<IBlueprintEditor> BlueprintEditor;

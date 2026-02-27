@@ -27,6 +27,47 @@ FBlueprintVariableMetaTagCustomization::FBlueprintVariableMetaTagCustomization(
 	BlueprintWeakPtr = GetBlueprintFromEditor();
 }
 
+bool FBlueprintVariableMetaTagCustomization::MatchesFieldClass(const FProperty* Property, FFieldClass* FieldClass)
+{
+	if (!FieldClass || Property->IsA(FieldClass))
+	{
+		return true;
+	}
+
+	// Check inner properties of container types
+	if (const FArrayProperty* ArrayProp = CastField<FArrayProperty>(Property))
+	{
+		if (ArrayProp->Inner && ArrayProp->Inner->IsA(FieldClass))
+			return true;
+	}
+	else if (const FSetProperty* SetProp = CastField<FSetProperty>(Property))
+	{
+		if (SetProp->ElementProp && SetProp->ElementProp->IsA(FieldClass))
+			return true;
+	}
+	else if (const FMapProperty* MapProp = CastField<FMapProperty>(Property))
+	{
+		if ((MapProp->KeyProp && MapProp->KeyProp->IsA(FieldClass)) ||
+			(MapProp->ValueProp && MapProp->ValueProp->IsA(FieldClass)))
+			return true;
+	}
+
+	return false;
+}
+
+FBPVariableDescription* FBlueprintVariableMetaTagCustomization::FindVariableDescription(FName VarName) const
+{
+	if (!BlueprintWeakPtr.IsValid())
+	{
+		return nullptr;
+	}
+
+	return BlueprintWeakPtr->NewVariables.FindByPredicate([VarName](const FBPVariableDescription& Desc)
+	{
+		return Desc.VarName == VarName;
+	});
+}
+
 void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 {
 	TArray<TWeakObjectPtr<UObject>> ObjectsBeingCustomized;
@@ -36,46 +77,10 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 		UPropertyWrapper* PropertyWrapper = Cast<UPropertyWrapper>(ObjectsBeingCustomized[0].Get());
 		TWeakFieldPtr<FProperty> PropertyBeingCustomized = PropertyWrapper ? PropertyWrapper->GetProperty() : nullptr;
 
-		auto FindPropPred = [PropertyBeingCustomized](FBPVariableDescription& Desc)
+		if(PropertyBeingCustomized.IsValid() && FindVariableDescription(PropertyBeingCustomized->GetFName()))
 		{
-			if (!PropertyBeingCustomized.IsValid()) return false;
-
-			return PropertyBeingCustomized->GetFName() == Desc.VarName;
-		};
-		
-		FBPVariableDescription* Found = BlueprintWeakPtr->NewVariables.FindByPredicate(FindPropPred);
-
-		if(PropertyBeingCustomized.IsValid() && Found)
-		{
+			FName VarName = PropertyBeingCustomized->GetFName();
 			IDetailCategoryBuilder& MetadataCategory = DetailBuilder.EditCategory("Meta Tags");
-
-			auto MatchesFieldClass = [](const FProperty* Property, FFieldClass* FieldClass) -> bool
-			{
-				if (!FieldClass || Property->IsA(FieldClass))
-				{
-					return true;
-				}
-
-				// Check inner properties of container types
-				if (const FArrayProperty* ArrayProp = CastField<FArrayProperty>(Property))
-				{
-					if (ArrayProp->Inner && ArrayProp->Inner->IsA(FieldClass))
-						return true;
-				}
-				else if (const FSetProperty* SetProp = CastField<FSetProperty>(Property))
-				{
-					if (SetProp->ElementProp && SetProp->ElementProp->IsA(FieldClass))
-						return true;
-				}
-				else if (const FMapProperty* MapProp = CastField<FMapProperty>(Property))
-				{
-					if ((MapProp->KeyProp && MapProp->KeyProp->IsA(FieldClass)) ||
-						(MapProp->ValueProp && MapProp->ValueProp->IsA(FieldClass)))
-						return true;
-				}
-
-				return false;
-			};
 
 			for (const FBlueprintableMetaTag* MetaTag : FBlueprintableMetaTag::GetRegisteredMetaTags())
 			{
@@ -106,11 +111,11 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 								if(!PropertyBeingCustomized.IsValid()) return ECheckBoxState::Unchecked;
 								return PropertyBeingCustomized->HasMetaData(TagName) ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
 							})
-							.OnCheckStateChanged_Lambda([FindPropPred, TagName, this](ECheckBoxState State)
+							.OnCheckStateChanged_Lambda([VarName, TagName, this](ECheckBoxState State)
 							{
 								if(!BlueprintWeakPtr.IsValid()) return;
 
-								FBPVariableDescription* FoundElement = BlueprintWeakPtr->NewVariables.FindByPredicate(FindPropPred);
+								FBPVariableDescription* FoundElement = FindVariableDescription(VarName);
 								if(FoundElement)
 								{
 									if(FoundElement->HasMetaData(TagName))
@@ -144,11 +149,11 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 							if(!PropertyBeingCustomized.IsValid()) return ECheckBoxState::Unchecked;
 							return PropertyBeingCustomized->HasMetaData(TagName) ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
 						})
-						.OnCheckStateChanged_Lambda([FindPropPred, TagName, this](ECheckBoxState State)
+						.OnCheckStateChanged_Lambda([VarName, TagName, this](ECheckBoxState State)
 						{
 							if(!BlueprintWeakPtr.IsValid()) return;
 
-							FBPVariableDescription* FoundElement = BlueprintWeakPtr->NewVariables.FindByPredicate(FindPropPred);
+							FBPVariableDescription* FoundElement = FindVariableDescription(VarName);
 							if(FoundElement)
 							{
 								if(FoundElement->HasMetaData(TagName))
@@ -166,10 +171,10 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 					];
 
 				// Lambda to commit a value string to the meta data
-				auto CommitValue = [FindPropPred, TagName, this](const FString& ValueStr)
+				auto CommitValue = [VarName, TagName, this](const FString& ValueStr)
 				{
 					if(!BlueprintWeakPtr.IsValid()) return;
-					FBPVariableDescription* FoundElement = BlueprintWeakPtr->NewVariables.FindByPredicate(FindPropPred);
+					FBPVariableDescription* FoundElement = FindVariableDescription(VarName);
 					if(FoundElement)
 					{
 						FoundElement->SetMetaData(TagName, ValueStr);
@@ -190,7 +195,7 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 								return FText::GetEmpty();
 							return FText::FromString(PropertyBeingCustomized->GetMetaData(TagName));
 						})
-						.OnTextChanged_Lambda([CommitValue](const FText& NewText)
+						.OnTextCommitted_Lambda([CommitValue](const FText& NewText, ETextCommit::Type CommitType)
 						{
 							CommitValue(NewText.ToString());
 						});
@@ -204,7 +209,7 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 								return TOptional<int32>();
 							return FCString::Atoi(*PropertyBeingCustomized->GetMetaData(TagName));
 						})
-						.OnValueChanged_Lambda([CommitValue](int32 NewValue)
+						.OnValueCommitted_Lambda([CommitValue](int32 NewValue, ETextCommit::Type CommitType)
 						{
 							CommitValue(FString::FromInt(NewValue));
 						});
@@ -218,7 +223,7 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 								return TOptional<float>();
 							return FCString::Atof(*PropertyBeingCustomized->GetMetaData(TagName));
 						})
-						.OnValueChanged_Lambda([CommitValue](float NewValue)
+						.OnValueCommitted_Lambda([CommitValue](float NewValue, ETextCommit::Type CommitType)
 						{
 							CommitValue(FString::SanitizeFloat(NewValue));
 						});
