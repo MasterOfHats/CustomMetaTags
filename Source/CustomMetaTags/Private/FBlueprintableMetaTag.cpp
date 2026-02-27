@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// MIT License - Copyright (c) Louis Lamontagne
 
 
 #include "FBlueprintableMetaTag.h"

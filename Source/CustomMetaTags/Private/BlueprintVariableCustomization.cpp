@@ -1,3 +1,5 @@
+// MIT License - Copyright (c) Louis Lamontagne
+
 #include "BlueprintVariableCustomization.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailCategoryBuilder.h"

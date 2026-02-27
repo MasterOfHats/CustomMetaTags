@@ -1,3 +1,5 @@
+// MIT License - Copyright (c) Louis Lamontagne
+
 #pragma once
 
 #include "CoreMinimal.h"

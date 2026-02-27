@@ -1,3 +1,5 @@
+// MIT License - Copyright (c) Louis Lamontagne
+
 #include "CustomMetaTagsModule.h"
 #include "BlueprintVariableCustomization.h"
 #include "BlueprintEditorModule.h"
