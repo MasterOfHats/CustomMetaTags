@@ -3,12 +3,7 @@
 
 #include "FBlueprintableMetaTag.h"
 
-BP_METATAG_STRING(Custom1, FField)
-BP_METATAG_BOOL(Custom2, FField)
-BP_METATAG_FLOAT(Custom3, FField)
-BP_METATAG_INT(Custom4, FField)
 
-BP_METATAG_LIST(AllowedTags, FObjectProperty, "This", "That", "Other")
 
 FBlueprintableMetaTag::FBlueprintableMetaTag(FName InTagName, FFieldClass* AllowedFields, EBPTagDataType InTagDataType)
 	: TagName(InTagName), AllowedFields(AllowedFields), TagDataType(InTagDataType)
