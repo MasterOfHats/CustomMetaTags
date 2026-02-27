@@ -3,7 +3,7 @@
 An Unreal Engine editor plugin that lets you define custom metadata tags for Blueprint variables, with automatic detail panel UI generation.
 
 FProperties can carry metadata in key-value string pairs. 
-For C++ UPROPERTIES adding meta tags is trivial. However for blueprints you usually to manually extend the variable editor 
+For C++ reflected properties, adding meta tags is trivial. However for blueprints you usually to manually extend the property details each time 
 
 This plugin provides:
 
