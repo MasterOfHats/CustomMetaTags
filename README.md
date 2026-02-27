@@ -85,7 +85,3 @@ The `FieldType` parameter controls which Blueprint variables show the tag. Use a
 3. When a Blueprint variable is selected, the customization iterates all registered tags, filters by field class, and builds the appropriate Slate widgets
 4. Edits are persisted to `FBPVariableDescription::SetMetaData()` and the Blueprint is marked modified
 
-## Requirements
-
-- Unreal Engine 5.7+
-- Editor-only (the plugin loads at `PostEngineInit` phase, type `Editor`)
