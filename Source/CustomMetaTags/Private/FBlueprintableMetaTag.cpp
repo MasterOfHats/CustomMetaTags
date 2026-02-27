@@ -3,21 +3,21 @@
 
 #include "FBlueprintableMetaTag.h"
 
-BP_METATAG_STRING(Custom1)
-BP_METATAG_BOOL(Custom2)
-BP_METATAG_FLOAT(Custom3)
-BP_METATAG_INT(Custom4)
+BP_METATAG_STRING(Custom1, FField)
+BP_METATAG_BOOL(Custom2, FField)
+BP_METATAG_FLOAT(Custom3, FField)
+BP_METATAG_INT(Custom4, FField)
 
-BP_METATAG_LIST(AllowedTags, "This", "That", "Other")
+BP_METATAG_LIST(AllowedTags, FObjectProperty, "This", "That", "Other")
 
-FBlueprintableMetaTag::FBlueprintableMetaTag(FName InTagName, EBPTagDataType InTagDataType)
-	: TagName(InTagName), TagDataType(InTagDataType)
+FBlueprintableMetaTag::FBlueprintableMetaTag(FName InTagName, FFieldClass* AllowedFields, EBPTagDataType InTagDataType)
+	: TagName(InTagName), AllowedFields(AllowedFields), TagDataType(InTagDataType)
 {
 	GetRegisteredMetaTags().Add(this);
 }
 
-FBlueprintableMetaTag::FBlueprintableMetaTag(FName InTagName, EBPTagDataType InTagDataType,
-	TArray<FString> InAllowedElements) : TagName(InTagName), TagDataType(InTagDataType)
+FBlueprintableMetaTag::FBlueprintableMetaTag(FName InTagName, FFieldClass* AllowedFields, EBPTagDataType InTagDataType,
+	TArray<FString> InAllowedElements) : TagName(InTagName), AllowedFields(AllowedFields), TagDataType(InTagDataType)
 {
 	for (auto AllowedElement: InAllowedElements)
 	{
@@ -35,6 +35,11 @@ FName FBlueprintableMetaTag::GetTagName() const
 EBPTagDataType FBlueprintableMetaTag::GetTagDataType() const
 {
 	return TagDataType;
+}
+
+FFieldClass* FBlueprintableMetaTag::GetAllowedFieldClass() const
+{
+	return AllowedFields;
 }
 
 const TArray<TSharedPtr<FString>>& FBlueprintableMetaTag::GetAllowedElements() const

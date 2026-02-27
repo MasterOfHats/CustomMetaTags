@@ -49,8 +49,42 @@ void FBlueprintVariableMetaTagCustomization::CustomizeDetails(IDetailLayoutBuild
 		{
 			IDetailCategoryBuilder& MetadataCategory = DetailBuilder.EditCategory("Meta Tags");
 
+			auto MatchesFieldClass = [](const FProperty* Property, FFieldClass* FieldClass) -> bool
+			{
+				if (!FieldClass || Property->IsA(FieldClass))
+				{
+					return true;
+				}
+
+				// Check inner properties of container types
+				if (const FArrayProperty* ArrayProp = CastField<FArrayProperty>(Property))
+				{
+					if (ArrayProp->Inner && ArrayProp->Inner->IsA(FieldClass))
+						return true;
+				}
+				else if (const FSetProperty* SetProp = CastField<FSetProperty>(Property))
+				{
+					if (SetProp->ElementProp && SetProp->ElementProp->IsA(FieldClass))
+						return true;
+				}
+				else if (const FMapProperty* MapProp = CastField<FMapProperty>(Property))
+				{
+					if ((MapProp->KeyProp && MapProp->KeyProp->IsA(FieldClass)) ||
+						(MapProp->ValueProp && MapProp->ValueProp->IsA(FieldClass)))
+						return true;
+				}
+
+				return false;
+			};
+
 			for (const FBlueprintableMetaTag* MetaTag : FBlueprintableMetaTag::GetRegisteredMetaTags())
 			{
+				// Skip tags that don't apply to this property's field class
+				if (!MatchesFieldClass(PropertyBeingCustomized.Get(), MetaTag->GetAllowedFieldClass()))
+				{
+					continue;
+				}
+
 				FName TagName = MetaTag->GetTagName();
 				FText TagDisplayName = FText::FromName(TagName);
 				EBPTagDataType TagDataType = MetaTag->GetTagDataType();
