@@ -24,5 +24,7 @@ public class CustomMetaTags : ModuleRules
 			"EditorStyle",
 			"InputCore",
 		});
+		
+		PublicDefinitions.Add("WITH_AUTO_METATAG=1");
 	}
 }

@@ -17,13 +17,13 @@ namespace UE::BPMetaTags::Private
 	}
 }
 
-#define BP_METATAG(Name, FieldType, Type) static FBlueprintableMetaTag MetaTag##Name(#Name, ##FieldType::StaticClass(), Type); static_assert(UE::BPMetaTags::Private::IsFileCPP(__FILE__), "BP_METATAG and its derivatives can only be used in .cpp files");
+#define BP_METATAG(Name, FieldType, Type) static FBlueprintableMetaTag MetaTag##Name(#Name, FieldType::StaticClass(), Type); static_assert(UE::BPMetaTags::Private::IsFileCPP(__FILE__), "BP_METATAG and its derivatives can only be used in .cpp files");
 
 #define BP_METATAG_BOOL(Name, FieldType) BP_METATAG(Name, FieldType, EBPTagDataType::Type_Bool);
 #define BP_METATAG_STRING(Name, FieldType) BP_METATAG(Name, FieldType, EBPTagDataType::Type_String);
 #define BP_METATAG_INT(Name, FieldType) BP_METATAG(Name, FieldType, EBPTagDataType::Type_Int);
 #define BP_METATAG_FLOAT(Name, FieldType) BP_METATAG(Name, FieldType, EBPTagDataType::Type_Float);
-#define BP_METATAG_LIST(Name, FieldType, ...) static FBlueprintableMetaTag MetaTag##Name(#Name, ##FieldType::StaticClass(), EBPTagDataType::Type_List, {__VA_ARGS__}); static_assert(UE::BPMetaTags::Private::IsFileCPP(__FILE__), "BP_METATAG and its derivatives can only be used in .cpp files");
+#define BP_METATAG_LIST(Name, FieldType, ...) static FBlueprintableMetaTag MetaTag##Name(#Name, FieldType::StaticClass(), EBPTagDataType::Type_List, {__VA_ARGS__}); static_assert(UE::BPMetaTags::Private::IsFileCPP(__FILE__), "BP_METATAG and its derivatives can only be used in .cpp files");
 
 
 
@@ -39,12 +39,12 @@ enum class EBPTagDataType
 /**
  * 
  */
-class CUSTOMMETATAGS_API FBlueprintableMetaTag : public FNoncopyable
+class FBlueprintableMetaTag : public FNoncopyable
 {
 public:
-	FBlueprintableMetaTag(FName InTagName, FFieldClass* AllowedFields, EBPTagDataType InTagDataType);
-	FBlueprintableMetaTag(FName InTagName, FFieldClass* AllowedFields, EBPTagDataType InTagDataType, TArray<FString> InAllowedElements);
-	virtual ~FBlueprintableMetaTag();
+	CUSTOMMETATAGS_API FBlueprintableMetaTag(FName InTagName, FFieldClass* AllowedFields, EBPTagDataType InTagDataType);
+	CUSTOMMETATAGS_API FBlueprintableMetaTag(FName InTagName, FFieldClass* AllowedFields, EBPTagDataType InTagDataType, TArray<FString> InAllowedElements);
+	CUSTOMMETATAGS_API virtual ~FBlueprintableMetaTag();
 	
 	
 	FName GetTagName() const;
